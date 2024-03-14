@@ -16,10 +16,13 @@ class TimerCard extends StatelessWidget {
           provider.currentState,
           style:
               // textStyle(35, Color.fromARGB(255, 28, 196, 101), FontWeight.w700),
-            textStyle(35, 
-    provider.currentState == "FOCUS" ? Colors.lightBlueAccent : Colors.redAccent,
-    FontWeight.w700,
-  ),
+              textStyle(
+            35,
+            provider.currentState == "FOCUS"
+                ? Colors.lightBlueAccent
+                : Colors.redAccent,
+            FontWeight.w700,
+          ),
         ),
         SizedBox(
           height: 20,
@@ -44,7 +47,8 @@ class TimerCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   ((provider.currentDuration ~/ 60).toString()),
-                  style: textStyle(70, renderColor(provider.currentState), FontWeight.bold),
+                  style: textStyle(
+                      70, renderColor(provider.currentState), FontWeight.bold),
                 ),
               ),
             ),
@@ -77,7 +81,8 @@ class TimerCard extends StatelessWidget {
                   seconds == 0
                       ? "${seconds.round()}0"
                       : seconds.round().toString(),
-                  style: textStyle(70, renderColor(provider.currentState), FontWeight.bold),
+                  style: textStyle(
+                      70, renderColor(provider.currentState), FontWeight.bold),
                 ),
               ),
             ),

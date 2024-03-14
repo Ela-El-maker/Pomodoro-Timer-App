@@ -1,5 +1,5 @@
 import 'dart:async';
-
+// import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
 class TimerService extends ChangeNotifier {
@@ -30,6 +30,12 @@ class TimerService extends ChangeNotifier {
   void start() {
     timerPlaying = true;
     timer = Timer.periodic(Duration(seconds: 1), (timer) {
+
+      // if (currentDuration == 30 && currentState == "FOCUS") {
+      //   // Play the beep sound when 30 seconds remaining in focus mode
+      //   audioCache.play('beep.mp3');
+      // }
+
       if (currentDuration == 0) {
         handleNextRound();
       } else {
