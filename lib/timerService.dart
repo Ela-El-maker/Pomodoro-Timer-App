@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 class TimerService extends ChangeNotifier {
   Timer? timer;
 
+// Title
+  String taskTitle = "";
+
   // Constants
   static const int focusDuration = 1500; // 25 mins
   static const int shortBreakDuration = 300; // 5 mins
@@ -28,6 +31,11 @@ class TimerService extends ChangeNotifier {
 
   set autoContinue(bool value) {
     _autoContinue = value;
+    notifyListeners();
+  }
+
+  void setTaskTitle(String title) {
+    taskTitle = title;
     notifyListeners();
   }
 
@@ -78,7 +86,12 @@ class TimerService extends ChangeNotifier {
   void handleNextRound({bool auto = false}) {
     if (currentState == "FOCUS") {
       rounds++;
-      goal++;
+      if (goal < 12) {
+        goal++;
+      } else {
+        // Show message
+        print("🎯 Daily goal completed!"); // Or trigger a toast/snackbar
+      }
 
       if (rounds < maxRounds) {
         currentState = "BREAK";
@@ -88,15 +101,12 @@ class TimerService extends ChangeNotifier {
         currentState = "LONGBREAK";
         currentDuration = longBreakDuration.toDouble();
         selectedTime = longBreakDuration.toDouble();
+        rounds = 0; // ✅ Reset rounds here
       }
     } else {
       currentState = "FOCUS";
       currentDuration = userSelectedFocusTime;
       selectedTime = userSelectedFocusTime;
-
-      if (rounds >= maxRounds) {
-        rounds = 0;
-      }
     }
 
     notifyListeners();

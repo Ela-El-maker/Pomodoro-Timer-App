@@ -112,17 +112,24 @@ class TimerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<TimerService>(context);
 
-    final totalMinutes = (provider.selectedTime ~/ 60).clamp(1, double.infinity);
+    final totalMinutes =
+        (provider.selectedTime ~/ 60).clamp(1, double.infinity);
     final minutesRemaining = (provider.currentDuration ~/ 60);
     final secondsRemaining = (provider.currentDuration % 60).floor();
 
     final minuteProgress = (totalMinutes - minutesRemaining) / totalMinutes;
     final secondProgress = (60 - secondsRemaining) / 60;
 
-    final timeString = "${minutesRemaining.toString().padLeft(2, '0')}:${secondsRemaining.toString().padLeft(2, '0')}";
+    final timeString =
+        "${minutesRemaining.toString().padLeft(2, '0')}:${secondsRemaining.toString().padLeft(2, '0')}";
 
     return Column(
       children: [
+        Text(
+          provider.taskTitle.isEmpty ? "No Task" : provider.taskTitle,
+          style: textStyle(20, Colors.white70, FontWeight.w500),
+        ),
+        const SizedBox(height: 10),
         Text(
           formatStateLabel(provider.currentState),
           style: textStyle(
@@ -193,7 +200,8 @@ class TimerCard extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressRing(BuildContext context, {
+  Widget _buildProgressRing(
+    BuildContext context, {
     required String label,
     required int current,
     required int total,

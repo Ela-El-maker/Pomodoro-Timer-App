@@ -43,7 +43,27 @@ class PomodoroScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: const [
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Enter task title...',
+                    hintStyle: TextStyle(color: Colors.white70),
+                    filled: true,
+                    fillColor: Colors.white10,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  style: TextStyle(color: Colors.white),
+                  onChanged: (value) {
+                    Provider.of<TimerService>(context, listen: false)
+                        .setTaskTitle(value);
+                  },
+                ),
+              ),
               TimerCard(),
               SizedBox(height: 40),
               TimeOptions(),
