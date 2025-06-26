@@ -1,103 +1,108 @@
 import 'dart:async';
-// import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 
 class TimerService extends ChangeNotifier {
   Timer? timer;
-  double currentDuration = 1500;
-  double selectedTime = 1500;
+
+  // Constants
+  static const int focusDuration = 1500; // 25 mins
+  static const int shortBreakDuration = 300; // 5 mins
+  static const int longBreakDuration = 1500; // 25 mins (adjust as needed)
+  static const int maxRounds = 4;
+
+  // State
+  double currentDuration = focusDuration.toDouble();
+  double selectedTime = focusDuration.toDouble(); // Current selected duration
+  double userSelectedFocusTime =
+      focusDuration.toDouble(); // Saved original focus time
+
   bool timerPlaying = false;
   int rounds = 0;
   int goal = 0;
   String currentState = "FOCUS";
 
-  // void start() {
-  //   timerPlaying = true;
-  //   timer = Timer.periodic(Duration(seconds: 1), (timer) {
-  //     if (currentDuration == 0) {
-  //       handleNextRound();
-  //     } else {
-  //       currentDuration--;
-  //       notifyListeners();
-  //     }
-  //     currentDuration -= 1;
-  //     notifyListeners();
-  //     if (currentDuration <= 0) {
-  //       stop();
-  //     }
-  //   });
-  // }
+  // bool autoContinue = true;
+  bool _autoContinue = true;
+
+  bool get autoContinue => _autoContinue;
+
+  set autoContinue(bool value) {
+    _autoContinue = value;
+    notifyListeners();
+  }
+
   void start() {
+    if (currentDuration <= 0) return; // Prevent running empty timer
     timerPlaying = true;
+
+    autoContinue = true; //running normally
+
+    notifyListeners();
+
     timer = Timer.periodic(Duration(seconds: 1), (timer) {
-
-      // if (currentDuration == 30 && currentState == "FOCUS") {
-      //   // Play the beep sound when 30 seconds remaining in focus mode
-      //   audioCache.play('beep.mp3');
-      // }
-
-      if (currentDuration == 0) {
-        handleNextRound();
+      if (currentDuration <= 1) {
+        stop();
+        handleNextRound(auto: true); // natural completion
       } else {
         currentDuration--;
         notifyListeners();
       }
-      // if (currentDuration <= 0) {
-      //   stop();
-      // }
     });
   }
 
   void stop() {
     timer?.cancel();
     timerPlaying = false;
+    autoContinue = false;
     notifyListeners();
   }
 
   void selectTime(double seconds) {
+    if (seconds < 60) return; // prevent very short times or 0
+    userSelectedFocusTime = seconds;
     selectedTime = seconds;
     currentDuration = seconds;
     notifyListeners();
   }
 
   void reset() {
-    timer?.cancel();
+    stop();
     currentState = "FOCUS";
-    currentDuration = selectedTime = 1500;
-    rounds = goal = 0;
-    timerPlaying = false;
+    selectedTime = userSelectedFocusTime;
+    currentDuration = selectedTime;
+    rounds = 0;
+    goal = 0;
     notifyListeners();
   }
 
-  void handleNextRound() {
-    // rounds++;
-    // currentDuration = selectedTime;
-    // notifyListeners();
-    // if (rounds == goal) {
-    //   stop();
-    // }
-    if (currentState == "FOCUS" && rounds != 3) {
-      currentState = "BREAK";
-      currentDuration = 300;
-      selectedTime = 300;
+  void handleNextRound({bool auto = false}) {
+    if (currentState == "FOCUS") {
       rounds++;
       goal++;
-    } else if (currentState == "BREAK") {
+
+      if (rounds < maxRounds) {
+        currentState = "BREAK";
+        currentDuration = shortBreakDuration.toDouble();
+        selectedTime = shortBreakDuration.toDouble();
+      } else {
+        currentState = "LONGBREAK";
+        currentDuration = longBreakDuration.toDouble();
+        selectedTime = longBreakDuration.toDouble();
+      }
+    } else {
       currentState = "FOCUS";
-      currentDuration = 1500;
-      selectedTime = 1500;
-    } else if (currentState == "FOCUS" && rounds == 3) {
-      currentState = "LONGBREAK";
-      currentDuration = 1500;
-      selectedTime = 1500;
-      rounds++;
-      goal++;
-    } else if (currentState == "LONGBREAK") {
-      currentState = "FOCUS";
-      currentDuration = 1500;
-      selectedTime = 1500;
-      rounds = 0;
+      currentDuration = userSelectedFocusTime;
+      selectedTime = userSelectedFocusTime;
+
+      if (rounds >= maxRounds) {
+        rounds = 0;
+      }
     }
+
     notifyListeners();
+
+    if (auto || autoContinue) {
+      start(); // ✅ auto-start only if not paused manually
+    }
   }
 }

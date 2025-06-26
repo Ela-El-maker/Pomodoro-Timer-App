@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/Users/feloe/Work/Flutter/YouTube/pomodoro/linux"
+    "cmake.sourceDirectory": "C:/Users/feloe/Work/Flutter/YouTube/pomodoro/linux",
+    "cmake.ignoreCMakeListsMissing": true
 }

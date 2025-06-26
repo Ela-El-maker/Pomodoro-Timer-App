@@ -4,53 +4,65 @@ import 'package:pomodoro/utils.dart';
 import 'package:provider/provider.dart';
 
 class TimeOptions extends StatelessWidget {
-  TimeOptions({super.key});
+  const TimeOptions({super.key});
 
-  double selectedTime = 1500;
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TimerService>(context);
+    final selected = provider.selectedTime;
+
     return SingleChildScrollView(
-      controller: ScrollController(
-        initialScrollOffset: 240,
-      ),
       scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
-          children: selectableTimes.map((time) {
-        return InkWell(
-          onTap: () => provider.selectTime(double.parse(time)),
-          child: Container(
-            margin: EdgeInsets.only(
-              left: 10,
-            ),
-            width: 70,
-            height: 50,
-            decoration: int.parse(time) == provider.selectedTime
-                ? BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(5),
-                  )
-                : BoxDecoration(
-                    border: Border.all(
-                      width: 3,
-                      color: Colors.white30,
-                    ),
-                    borderRadius: BorderRadius.circular(5),
+        children: selectableTimes.map((time) {
+          final seconds = double.parse(time);
+          final isSelected = seconds == selected;
+
+          return GestureDetector(
+            onTap: () {
+              if (!provider.timerPlaying) {
+                provider.selectTime(seconds);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Pause the timer to change time"),
+                    duration: Duration(seconds: 1),
                   ),
-            child: Center(
-              child: Text(
-                (int.parse(time) ~/ 60).toString(),
-                style: textStyle(
+                );
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.only(right: 10),
+              width: 70,
+              height: 50,
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(5),
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        width: 2.5,
+                        color: Colors.white30,
+                      ),
+              ),
+              child: Center(
+                child: Text(
+                  (seconds ~/ 60).toString(), // convert to minutes
+                  style: textStyle(
                     25,
-                    int.parse(time) == provider.selectedTime
+                    isSelected
                         ? renderColor(provider.currentState)
                         : Colors.white,
-                    FontWeight.w700),
+                    FontWeight.w700,
+                  ),
+                ),
               ),
             ),
-          ),
-        );
-      }).toList()),
+          );
+        }).toList(),
+      ),
     );
   }
 }

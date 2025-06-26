@@ -13,6 +13,7 @@ class PomodoroScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TimerService>(context);
+
     return Scaffold(
       backgroundColor: renderColor(provider.currentState),
       appBar: AppBar(
@@ -24,22 +25,25 @@ class PomodoroScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            onPressed: () => Provider.of<TimerService>(context, listen: false).reset(),
-            icon: Icon(
-              Icons.refresh,
-              color: Colors.white,
-            ),
-          )
+            onPressed: () =>
+                Provider.of<TimerService>(context, listen: false).reset(),
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: "Reset Timer",
+          ),
+          IconButton(
+            onPressed: () => _showSettings(context),
+            icon: const Icon(Icons.settings, color: Colors.white),
+            tooltip: "Settings",
+          ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Container(
-          alignment: Alignment.center,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           child: Column(
-            children: [
-              SizedBox(
-                height: 15,
-              ),
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: const [
               TimerCard(),
               SizedBox(height: 40),
               TimeOptions(),
@@ -53,4 +57,38 @@ class PomodoroScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showSettings(BuildContext context) {
+  final provider = Provider.of<TimerService>(context, listen: false);
+
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    backgroundColor: Colors.white,
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Auto-start next round",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            Consumer<TimerService>(
+              builder: (context, timerService, _) => Switch(
+                value: timerService.autoContinue,
+                onChanged: (value) {
+                  timerService.autoContinue = value;
+                },
+              ),
+            )
+          ],
+        ),
+      );
+    },
+  );
 }

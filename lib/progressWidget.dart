@@ -9,52 +9,47 @@ class ProgressWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TimerService>(context);
+
+    final roundText = "${provider.rounds}/${TimerService.maxRounds}";
+    final goalText = "${provider.goal}/12";
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          //   children: [
+          //     _buildProgressBox(context, roundText, 'ROUNDS'),
+          //     _buildProgressBox(context, goalText, 'GOALS'),
+          //   ],
+          // ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressBox(
+      BuildContext context, String value, String label) {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Text(
-              "${provider.rounds}/4",
-              style: textStyle(
-                30,
-                Colors.grey[350],
-                FontWeight.bold,
-              ),
-            ),
-            Text(
-              "${provider.goal}/12",
-              style: textStyle(
-                30,
-                Colors.grey[350],
-                FontWeight.bold,
-              ),
-            )
-          ],
+        Text(
+          value,
+          style: textStyle(
+            30,
+            Colors.white.withOpacity(0.9),
+            FontWeight.bold,
+          ),
         ),
-        SizedBox(
-          height: 10,
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Text(
-              'ROUND',
-              style: textStyle(
-                25,
-                Colors.grey[500],
-                FontWeight.bold,
-              ),
-            ),
-            Text(
-              'GOAL',
-              style: textStyle(
-                25,
-                Colors.grey[500],
-                FontWeight.bold,
-              ),
-            )
-          ],
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: textStyle(
+            20,
+            Colors.white54,
+            FontWeight.w600,
+          ),
         ),
       ],
     );
