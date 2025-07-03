@@ -177,25 +177,25 @@ class TimerCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 30),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildProgressRing(
-              context,
-              label: 'ROUND',
-              current: provider.rounds,
-              total: 4,
-              color: Colors.blueAccent,
-            ),
-            _buildProgressRing(
-              context,
-              label: 'GOAL',
-              current: provider.goal,
-              total: 12,
-              color: Colors.deepOrangeAccent,
-            ),
-          ],
-        )
+        // Row(
+        //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        //   children: [
+        //     _buildProgressRing(
+        //       context,
+        //       label: 'ROUND',
+        //       current: provider.rounds,
+        //       total: 4,
+        //       color: Colors.blueAccent,
+        //     ),
+        //     _buildProgressRing(
+        //       context,
+        //       label: 'GOAL',
+        //       current: provider.goal,
+        //       total: 12,
+        //       color: Colors.deepOrangeAccent,
+        //     ),
+        //   ],
+        // )
       ],
     );
   }

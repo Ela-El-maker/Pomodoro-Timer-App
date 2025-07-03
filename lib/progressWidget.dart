@@ -10,8 +10,8 @@ class ProgressWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<TimerService>(context);
 
-    final roundText = "${provider.rounds}/${TimerService.maxRounds}";
-    final goalText = "${provider.goal}/12";
+    // final roundText = "${provider.rounds}/${TimerService.maxRounds}";
+    // final goalText = "${provider.goal}/12";
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),

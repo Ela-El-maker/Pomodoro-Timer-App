@@ -30,16 +30,17 @@ List<String> selectableTimes = [
 Color renderColor(String currentState) {
   switch (currentState) {
     case "FOCUS":
-      return Color(0xAA0D1B2A); // Glassmorphic dark blue
+      return const Color(0xFF1A1A40); // Deep Indigo
     case "BREAK":
-      return Color(0xAA5D6D7E); // a muted, sophisticated blue-gray
-
+      return const Color(0xFFA8D5BA); // Misty Sage
     case "LONGBREAK":
-      return Colors.greenAccent;
+      return const Color(0xFFFFD6A5); // Warm Coral
     default:
-      return Colors.grey;
+      return Colors.grey.shade400;
   }
 }
+
+
 
 
 /// Converts internal state label to user-friendly text.
