@@ -96,7 +96,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
       print("✅ Focus Completed: ${completedFocus.length}");
 
       setState(() {
-        completedRounds = completedFocus.length; // ✅ Only focus sessions
+        completedRounds = completedFocus.length ~/ 4; // ✅ Integer division
       });
     } catch (e) {
       debugPrint("❌ Failed to load sessions: $e");
@@ -284,10 +284,10 @@ class _PomodoroScreenState extends State<PomodoroScreen>
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: renderColor(provider.currentState),
+        backgroundColor: renderColor(provider.currentState.name),
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: renderColor(provider.currentState),
+          backgroundColor: renderColor(provider.currentState.name),
           title: Text(
             "Pomodoro Timer",
             style: textStyle(25, Colors.white, FontWeight.w700),
@@ -362,6 +362,23 @@ class _PomodoroScreenState extends State<PomodoroScreen>
                   "🎯 $completedRounds rounds ($completedGoals / $targetGoals goals)",
                   style: textStyle(16, Colors.white, FontWeight.w500),
                 ),
+                Text(
+                  "🧠 Focus Sessions This Round: ${provider.completedFocusCount % 4}/4",
+                  style: textStyle(14, Colors.white70, FontWeight.w400),
+                ),
+                if (provider.isBonusMode)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      "⭐ You're now in bonus mode — sessions won't count toward goals!",
+                      style: TextStyle(
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 const SizedBox(height: 20),
                 TimerCard(),
                 const SizedBox(height: 40),

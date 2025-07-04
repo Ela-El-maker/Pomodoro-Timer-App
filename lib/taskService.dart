@@ -44,6 +44,17 @@ class Task {
           : DateTime.now(), // fallback to prevent crash
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'target_goals': targetGoals,
+        'completed_rounds': completedRounds,
+        'completed_goals': completedGoals,
+        'is_completed': isCompleted,
+        'updated_at': updatedAt.toIso8601String(),
+      };
 }
 
 class TaskService with ChangeNotifier {
@@ -63,26 +74,40 @@ class TaskService with ChangeNotifier {
   Future<void> fetchTasks() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
+    final url = Uri.parse('$baseUrl/tasks');
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/tasks'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      _tasks = data.map((json) => Task.fromJson(json)).toList();
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        _tasks = data.map((json) => Task.fromJson(json)).toList();
+        _tasks.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
-      // ✅ Sort by updatedAt (latest first)
-      _tasks.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        // ✅ Save cache
+        final cachedJson = jsonEncode(_tasks.map((t) => t.toJson()).toList());
+        await prefs.setString('cached_tasks', cachedJson);
 
-      notifyListeners();
-    } else {
-      debugPrint('Failed to fetch tasks: ${response.body}');
-      throw Exception('Failed to fetch tasks: ${response.body}');
+        notifyListeners();
+      } else {
+        throw Exception('Failed to fetch from server');
+      }
+    } catch (e) {
+      // ⚠️ Fallback to cached tasks
+      final cached = prefs.getString('cached_tasks');
+      if (cached != null) {
+        final List cachedList = jsonDecode(cached);
+        _tasks = cachedList.map((json) => Task.fromJson(json)).toList();
+        notifyListeners();
+      } else {
+        rethrow; // nothing to fall back to
+      }
     }
   }
 

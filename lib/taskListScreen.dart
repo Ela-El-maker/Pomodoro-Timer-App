@@ -43,6 +43,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
   @override
   Widget build(BuildContext context) {
     final taskService = Provider.of<TaskService>(context);
+ 
+    final user = context.watch<AuthService>().user;
 
     return Scaffold(
       appBar: AppBar(
@@ -128,57 +130,63 @@ class _TaskListScreenState extends State<TaskListScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: taskService.tasks.length,
-              itemBuilder: (context, index) {
-                final task = taskService.tasks[index];
-                return ListTile(
-                  title: Row(
-                    children: [
-                      Expanded(child: Text(task.title)),
-                      if (task.isCompleted)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            "Done",
-                            style: TextStyle(color: Colors.white, fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  ),
-                  subtitle: Text(
-                    task.description.isNotEmpty
-                        ? task.description
-                        : "No description.",
-                  ),
-                  onTap: () {
-                    print(
-                        "➡️ Navigating to TaskDetailScreen (Task ID: ${task.id})");
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TaskDetailScreen(task: task),
+          : Column(children: [
+              buildUserCard(user),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: taskService.tasks.length,
+                  itemBuilder: (context, index) {
+                    final task = taskService.tasks[index];
+                    return ListTile(
+                      title: Row(
+                        children: [
+                          Expanded(child: Text(task.title)),
+                          if (task.isCompleted)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                "Done",
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 12),
+                              ),
+                            ),
+                        ],
                       ),
-                    ).then((result) {
-                      // Refresh the task list when returning from TaskDetailScreen
-                      _loadTasks();
-                    });
+                      subtitle: Text(
+                        task.description.isNotEmpty
+                            ? task.description
+                            : "No description.",
+                      ),
+                      onTap: () {
+                        print(
+                            "➡️ Navigating to TaskDetailScreen (Task ID: ${task.id})");
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TaskDetailScreen(task: task),
+                          ),
+                        ).then((result) {
+                          // Refresh the task list when returning from TaskDetailScreen
+                          _loadTasks();
+                        });
+                      },
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () async {
+                          await taskService.deleteTask(task.id);
+                          await _loadTasks(); // refresh after delete
+                        },
+                      ),
+                    );
                   },
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () async {
-                      await taskService.deleteTask(task.id);
-                      await _loadTasks(); // refresh after delete
-                    },
-                  ),
-                );
-              },
-            ),
+                ),
+              )
+            ]),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () => Navigator.push(
@@ -187,6 +195,52 @@ class _TaskListScreenState extends State<TaskListScreen> {
             builder: (_) => const TaskFormScreen(),
           ),
         ).then((_) => _loadTasks()), // Refresh when returning from form
+      ),
+    );
+  }
+
+  Widget buildUserCard(Map<String, dynamic>? user) {
+    if (user == null) {
+      print("User Not Found: $user");
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: LinearProgressIndicator(), // subtle loading indicator
+      );
+    }
+
+    print("User Found : $user");
+
+    return Card(
+      color: Colors.blueGrey.shade100,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 25,
+              child: Icon(Icons.person),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user['name'] ?? 'Unknown User',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    user['email'] ?? '',
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

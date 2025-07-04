@@ -53,7 +53,7 @@ class TimeOptions extends StatelessWidget {
                   style: textStyle(
                     25,
                     isSelected
-                        ? renderColor(provider.currentState)
+                        ? renderColor(provider.currentState.name)
                         : Colors.white,
                     FontWeight.w700,
                   ),

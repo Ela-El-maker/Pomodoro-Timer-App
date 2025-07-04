@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pomodoro/taskListScreen.dart';
 import 'authService.dart';
-import 'pomodoroScreen.dart';
 import 'registrationScreen.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,6 +15,18 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
   String error = '';
+  bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    emailController.addListener(_onTextChanged);
+    passwordController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    setState(() {}); // Forces rebuild so the button gets enabled
+  }
 
   void loginUser() async {
     setState(() {
@@ -24,24 +34,40 @@ class _LoginScreenState extends State<LoginScreen> {
       error = '';
     });
 
-    final result = await AuthService().login(
-      emailController.text.trim(),
-      passwordController.text.trim(),
-    );
-
-    setState(() => isLoading = false);
-
-    if (result == true) {
-      Navigator.pushReplacement(
-        context,
-        // MaterialPageRoute(builder: (_) => const DailyStatsScreen()),
-        MaterialPageRoute(builder: (_) => const TaskListScreen()),
+    try {
+      final message = await AuthService().login(
+        emailController.text.trim(),
+        passwordController.text.trim(),
       );
-    } else {
+
+      setState(() => isLoading = false);
+
+      if (message == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TaskListScreen()),
+        );
+      }
+    } catch (e) {
       setState(() {
-        error = result.toString();
+        error = e.toString().replaceFirst("Exception: ", "");
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst("Exception: ", "")),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      setState(() => isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -63,39 +89,59 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 30),
                 TextField(
                   controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.username],
                   decoration: InputDecoration(
                     hintText: "Email",
                     fillColor: Colors.white12,
                     filled: true,
                     hintStyle: const TextStyle(color: Colors.white54),
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                   style: const TextStyle(color: Colors.white),
                 ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: passwordController,
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     hintText: "Password",
                     fillColor: Colors.white12,
                     filled: true,
                     hintStyle: const TextStyle(color: Colors.white54),
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: Colors.white60,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
                   style: const TextStyle(color: Colors.white),
                 ),
                 const SizedBox(height: 20),
-                if (error.isNotEmpty)
-                  Text(error, style: const TextStyle(color: Colors.redAccent)),
+               
                 ElevatedButton(
-                  onPressed: isLoading ? null : loginUser,
+                  onPressed: isLoading ||
+                          emailController.text.isEmpty ||
+                          passwordController.text.isEmpty
+                      ? null
+                      : loginUser,
                   child: isLoading
-                      ? const CircularProgressIndicator()
+                      ? const CircularProgressIndicator(color: Colors.white)
                       : const Text("Login"),
                 ),
                 const SizedBox(height: 10),

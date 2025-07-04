@@ -12,60 +12,67 @@ class AuthService with ChangeNotifier {
 
   bool get isAuthenticated => _authenticated;
   String? get token => _token;
+  Map<String, dynamic>? _user;
+  Map<String, dynamic>? get user => _user;
 
-  Future<bool> register(String name, String email, String password) async {
-  final url = Uri.parse("$baseUrl/register");
+  Future<bool?> register(String name, String email, String password) async {
+    final url = Uri.parse("$baseUrl/register");
 
-  final response = await http.post(
-    url,
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json", // important
-    },
-    body: jsonEncode({ // ✅ This fixes the error
-      "name": name,
-      "email": email,
-      "password": password,
-      "password_confirmation": password,
-    }),
-  );
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "name": name,
+          "email": email,
+          "password": password,
+          "password_confirmation": password,
+        }),
+      );
 
-  print("📥 Status: ${response.statusCode}");
-  print("📥 Body: ${response.body}");
+      final data = jsonDecode(response.body);
 
-  final data = jsonDecode(response.body);
-
-  if (response.statusCode == 201 && data['token'] != null) {
-    _saveToken(data['token']);
-    return true;
-  } else {
-    throw Exception(data['message'] ?? data.toString());
+      if (response.statusCode == 200 && data['token'] != null) {
+        await _saveToken(data['token']); // Save token first
+        await fetchUser(); // Then fetch user
+        notifyListeners();
+        return true;
+      } else {
+        throw Exception(data['message'] ?? "Registration failed.");
+      }
+    } catch (e) {
+      throw Exception("Something went wrong: ${e.toString()}");
+    }
   }
-}
 
-
-  Future<bool> login(String email, String password) async {
+  Future<bool?> login(String email, String password) async {
     final url = Uri.parse("$baseUrl/login");
 
-    final response = await http.post(
-      url,
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json", // ✅ Important
-      },
-      body: {
-        "email": email,
-        "password": password,
-      },
-    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({"email": email, "password": password}),
+      );
 
-    final data = jsonDecode(response.body);
+      final data = jsonDecode(response.body);
 
-    if (response.statusCode == 200 && data['token'] != null) {
-      _saveToken(data['token']);
-      return true;
-    } else {
-      throw Exception(data['message'] ?? "Login failed");
+      if (response.statusCode == 200 && data['token'] != null) {
+        await _saveToken(data['token']); // Save token first
+        await fetchUser(); // Then fetch user
+        notifyListeners();
+        return true;
+      } else {
+        throw Exception(data['message'] ?? "Login failed. Please try again.");
+      }
+    } catch (e) {
+      throw Exception('Login error: ${e.toString()}');
     }
   }
 
@@ -82,6 +89,15 @@ class AuthService with ChangeNotifier {
     if (prefs.containsKey('token')) {
       _token = prefs.getString('token');
       _authenticated = true;
+
+      // Restore cached user
+      if (prefs.containsKey('user')) {
+        _user = jsonDecode(prefs.getString('user')!);
+      }
+
+// 🔧 Ensure server sync (optional but preferred)
+      await fetchUser();
+
       notifyListeners();
     }
   }
@@ -93,6 +109,30 @@ class AuthService with ChangeNotifier {
     await prefs.setString('token', token);
     // await prefs.setInt('user_id', user['id']);
     notifyListeners();
+  }
+
+  Future<void> fetchUser() async {
+    if (_token == null) return;
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/user'),
+      headers: {
+        'Authorization': 'Bearer $_token',
+        'Accept': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      _user = jsonDecode(response.body);
+      debugPrint("✅ User fetched: $_user");
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user', jsonEncode(_user)); // 💾 cache user
+      notifyListeners();
+    } else {
+      debugPrint(
+          "Failed to fetch user: ${response.statusCode} ${response.body}");
+      _user = null;
+    }
   }
 
   // Future<void> logout() async {
@@ -144,6 +184,7 @@ class AuthService with ChangeNotifier {
     }
 
     _token = null;
+    _user = null;
     _authenticated = false;
     await prefs.remove('token');
     notifyListeners();

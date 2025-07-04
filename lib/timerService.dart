@@ -6,6 +6,23 @@ import 'pomodoroService.dart';
 import 'pomodoroSession.dart';
 import 'taskService.dart';
 
+enum PomodoroMode {
+  focus,
+  shortBreak,
+  longBreak,
+}
+
+String _mapModeToBackend(PomodoroMode mode) {
+  switch (mode) {
+    case PomodoroMode.focus:
+      return 'focus';
+    case PomodoroMode.shortBreak:
+      return 'short_break';
+    case PomodoroMode.longBreak:
+      return 'long_break';
+  }
+}
+
 class TimerService extends ChangeNotifier {
   Timer? timer;
 
@@ -13,6 +30,8 @@ class TimerService extends ChangeNotifier {
   String taskTitle = "";
 
   // Constants
+  int roundCount = 0;
+  int completedFocusCount = 0; // 💡 Used to track sessions in current round
   int focusDuration; // 25 mins
   int shortBreakDuration; // 5 mins
   int longBreakDuration; // 25 mins (adjust as needed)
@@ -28,7 +47,7 @@ class TimerService extends ChangeNotifier {
   bool timerPlaying = false;
   // int rounds = 0;
   // int goal = 0;
-  String currentState = "FOCUS";
+  PomodoroMode currentState = PomodoroMode.focus;
 
   TimerService({
     required this.focusDuration,
@@ -44,6 +63,18 @@ class TimerService extends ChangeNotifier {
   int? _taskId;
   DateTime? _sessionStart;
   Task? _currentTask;
+
+  bool _bonusMode = false;
+
+  void enterBonusMode() {
+    _bonusMode = true;
+  }
+
+  void exitBonusMode() {
+    _bonusMode = false;
+  }
+
+  bool get isBonusMode => _bonusMode;
 
   void setActiveTask(int taskId) {
     _taskId = taskId;
@@ -66,13 +97,10 @@ class TimerService extends ChangeNotifier {
   }
 
   void start() async {
-    if (_taskId == null || currentDuration <= 0)
-      return; // Prevent running empty timer
+    if (_taskId == null || currentDuration <= 0) return;
 
-    // Always check if task is completed before starting
     try {
       final latestTask = await TaskService().getTaskById(_taskId!);
-
       if (latestTask.isCompleted) {
         debugPrint("❌ Cannot start timer - Task is Completed");
         return;
@@ -86,14 +114,16 @@ class TimerService extends ChangeNotifier {
 
     timerPlaying = true;
     _sessionStart = DateTime.now();
-    autoContinue = true; //running normally
+    autoContinue = true;
+
+    debugPrint("▶️ Starting ${currentState.name} session");
 
     notifyListeners();
 
     timer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (currentDuration <= 1) {
         stop();
-        handleNextRound(auto: true); // natural completion
+        handleNextRound(auto: true);
       } else {
         currentDuration--;
         notifyListeners();
@@ -112,8 +142,16 @@ class TimerService extends ChangeNotifier {
     timerPlaying = false;
     autoContinue = false;
 
-    if (save && _taskId != null && _sessionStart != null) {
-      _saveSession(interrupted: true); // 👈 new parameter
+    final PomodoroMode modeAtStop = currentState; // Snapshot the mode
+    final sessionStartAtStop = _sessionStart; // Snapshot the start time
+
+    debugPrint("⏹️ Stopped ${modeAtStop.name} session manually. Save: $save");
+
+    if (save && _taskId != null && sessionStartAtStop != null) {
+      _saveSession(
+        interrupted: true,
+        mode: modeAtStop, // 💡 Pass snapshot to ensure correct mode
+      );
     }
 
     notifyListeners();
@@ -128,15 +166,15 @@ class TimerService extends ChangeNotifier {
   }
 
   void reset() {
+    exitBonusMode();
     stop();
-    currentState = "FOCUS";
+    currentState = PomodoroMode.focus;
     selectedTime = userSelectedFocusTime;
     currentDuration = selectedTime;
-    // rounds = 0;
-    // goal = 0;
     _taskId = null;
     _sessionStart = null;
     _currentTask = null;
+    completedFocusCount = 0; // 👈 Reset focus session
     notifyListeners();
   }
 
@@ -178,66 +216,89 @@ class TimerService extends ChangeNotifier {
   // }
 
   void handleNextRound({bool auto = false}) async {
-    // Check if task is completed before saving session
-
     if (_currentTask?.isCompleted == true) {
       debugPrint("❌ Cannot Continue - Task is completed...");
       reset();
       return;
     }
 
+    final PomodoroMode prevMode = currentState; // 👈 snapshot BEFORE changing
+
+    // Save session before switching state
     if (_taskId != null && _sessionStart != null) {
-      await _saveSession();
+      await _saveSession(mode: prevMode);
     }
 
-    if (currentState == "FOCUS") {
-      currentState = "BREAK";
-      currentDuration = shortBreakDuration.toDouble();
-      selectedTime = shortBreakDuration.toDouble();
-    } else if (currentState == "BREAK") {
-      currentState = "FOCUS";
-      currentDuration = userSelectedFocusTime;
-      selectedTime = userSelectedFocusTime;
-    } else if (currentState == "LONGBREAK") {
-      currentState = "FOCUS";
-      currentDuration = userSelectedFocusTime;
-      selectedTime = userSelectedFocusTime;
+    // 🔄 STATE TRANSITION
+    switch (currentState) {
+      case PomodoroMode.focus:
+        roundCount++;
+        debugPrint("✅ Finished Focus. Round count: $roundCount");
+
+        if (roundCount < maxRounds) {
+          currentState = PomodoroMode.shortBreak;
+          currentDuration = shortBreakDuration.toDouble();
+          selectedTime = shortBreakDuration.toDouble();
+          debugPrint("⏸️ Switching to Short Break...");
+        } else {
+          currentState = PomodoroMode.longBreak;
+          currentDuration = longBreakDuration.toDouble();
+          selectedTime = longBreakDuration.toDouble();
+          roundCount = 0;
+          debugPrint("⏹️ Switching to Long Break...");
+        }
+        break;
+
+      case PomodoroMode.shortBreak:
+      case PomodoroMode.longBreak:
+        currentState = PomodoroMode.focus;
+        currentDuration = userSelectedFocusTime;
+        selectedTime = userSelectedFocusTime;
+        debugPrint("🧠 Switching back to Focus session...");
+        break;
     }
 
     notifyListeners();
 
     if (auto || _autoContinue) {
-      start(); // ✅ Auto-start only if not manually paused
+      start();
     }
   }
 
-  Future<void> _saveSession({bool interrupted = false}) async {
-    
-    // Dont Save session if task is completed
-    if(_currentTask?.isCompleted == true)
-  {
-    debugPrint("❌ Not saving session - task is completed");
-    return;
-  }
-    
+  Future<void> _saveSession(
+      {required PomodoroMode mode, bool interrupted = false}) async {
+    if (_bonusMode || _currentTask?.isCompleted == true) {
+      debugPrint("⏭ Skipping save in bonus mode");
+      return;
+    }
+
     final now = DateTime.now();
     final secondsElapsed = now.difference(_sessionStart!).inSeconds;
 
+    // Track completed focus sessions
+    if (mode == PomodoroMode.focus && !interrupted) {
+      completedFocusCount++;
+      debugPrint("🎯 Completed focus session. Total: $completedFocusCount");
+    }
+
     final session = PomodoroSession(
       taskId: _taskId!,
-      mode: currentState,
+      mode: _mapModeToBackend(mode),
       duration: interrupted ? secondsElapsed : selectedTime.toInt(),
       startedAt: _sessionStart!,
       completedAt: now,
       wasCompleted: !interrupted,
     );
 
+    debugPrint(
+        "💾 Saving session of type: ${mode.name}, interrupted: $interrupted");
+
     try {
       await PomodoroService().createSession(session);
 
-      // 🎯 Track session against task progress
       if (_taskId != null) {
         final result = await PomodoroService().trackTaskSession(_taskId!);
+        debugPrint("📡 Tracking task session...");
 
         final goalReached = result['goal_reached'] ?? false;
         final context = navigatorKey.currentContext;
@@ -247,17 +308,12 @@ class TimerService extends ChangeNotifier {
             await _showGoalReachedPrompt(context, result['task']);
           }
 
-          // _showGoalReachedPrompt(navigatorKey.currentContext!, result['task']);
-
-          // _showGoalReachedPrompt(result['task']);
-          // Show notification or toast
-          print(
+          debugPrint(
               "🎉 Goal reached! Prompt user to continue or mark task as done.");
-          // Optionally trigger UI prompt later
         }
       }
     } catch (e) {
-      print("Failed to save or track session: $e");
+      print("❌ Failed to save or track session: $e");
     }
 
     _sessionStart = null;
@@ -314,9 +370,16 @@ class TimerService extends ChangeNotifier {
 
                 // Update current task status
 
-                if(_currentTask != null)
-                {
-                  _currentTask = Task(id: _currentTask!.id, title: _currentTask!.title, description: _currentTask!.description, targetGoals: _currentTask!.targetGoals, completedRounds: _currentTask!.completedRounds, completedGoals: _currentTask!.completedGoals, isCompleted: true,updatedAt: _currentTask!.updatedAt);
+                if (_currentTask != null) {
+                  _currentTask = Task(
+                      id: _currentTask!.id,
+                      title: _currentTask!.title,
+                      description: _currentTask!.description,
+                      targetGoals: _currentTask!.targetGoals,
+                      completedRounds: _currentTask!.completedRounds,
+                      completedGoals: _currentTask!.completedGoals,
+                      isCompleted: true,
+                      updatedAt: _currentTask!.updatedAt);
                 }
                 markTaskAsCompleted();
                 notifyListeners();
@@ -333,13 +396,11 @@ class TimerService extends ChangeNotifier {
     );
 
     if (result == true) {
-      // ✅ Task was marked complete — reset everything
-      reset(); // Reset timer, session, task state
-      // Optionally: navigate away or show a toast/snackbar
+      reset(); // ✅ Task marked complete
       Navigator.of(context).pop();
     } else {
-      // ▶️ Resume timer if user chose to continue
-      start();
+      enterBonusMode(); // ⭐ User chose to continue
+      start(); // ▶️ Resume timer
     }
   }
 

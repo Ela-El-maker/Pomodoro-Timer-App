@@ -1,105 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:pomodoro/timerService.dart';
-// import 'package:pomodoro/utils.dart';
-// import 'package:provider/provider.dart';
-
-// class TimerCard extends StatelessWidget {
-//   const TimerCard({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final provider = Provider.of<TimerService>(context);
-//     final seconds = (provider.currentDuration % 60).floor();
-//     final minutes = provider.currentDuration ~/ 60;
-
-//     return Column(
-//   children: [
-//     Text(
-//       formatStateLabel(provider.currentState),
-//       style: textStyle(
-//         35,
-//         provider.currentState == "FOCUS"
-//             ? Colors.lightBlueAccent
-//             : provider.currentState == "BREAK"
-//                 ? Colors.redAccent
-//                 : Colors.green,
-//         FontWeight.w700,
-//       ),
-//     ),
-//     const SizedBox(height: 20),
-//     TweenAnimationBuilder<double>(
-//       duration: const Duration(milliseconds: 500),
-//       tween: Tween<double>(
-//         begin: 0,
-//         end: provider.currentDuration / provider.selectedTime,
-//       ),
-//       builder: (context, value, _) {
-//         final minutes = (provider.currentDuration ~/ 60).toString().padLeft(2, '0');
-//         final seconds = ((provider.currentDuration % 60).floor()).toString().padLeft(2, '0');
-//         final timeString = "$minutes:$seconds";
-
-//         return Stack(
-//           alignment: Alignment.center,
-//           children: [
-//             SizedBox(
-//               width: 200,
-//               height: 200,
-//               child: CircularProgressIndicator(
-//                 value: value,
-//                 strokeWidth: 8,
-//                 backgroundColor: Colors.white12,
-//                 valueColor: AlwaysStoppedAnimation<Color>(
-//                   renderColor(provider.currentState),
-//                 ),
-//               ),
-//             ),
-//             Text(
-//               timeString,
-//               style: textStyle(40, Colors.white, FontWeight.bold),
-//             ),
-//           ],
-//         );
-//       },
-//     ),
-//   ],
-// );
-
-//   }
-
-//   /// Reusable time display box
-//   Widget _buildTimeCard(BuildContext context, String timeText) {
-//     final provider = Provider.of<TimerService>(context);
-//     return Container(
-//       width: MediaQuery.of(context).size.width / 3.2,
-//       height: 170,
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(15),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.5),
-//             spreadRadius: 4,
-//             blurRadius: 4,
-//             offset: const Offset(0, 2),
-//           ),
-//         ],
-//       ),
-//       child: Center(
-//         child: Text(
-//           timeText,
-//           style: textStyle(
-//             70,
-//             renderColor(provider.currentState),
-//             FontWeight.bold,
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// 📁 File: timerCard.dart
-
 import 'package:flutter/material.dart';
 import 'package:pomodoro/timerService.dart';
 import 'package:pomodoro/utils.dart';
@@ -131,10 +29,10 @@ class TimerCard extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          formatStateLabel(provider.currentState),
+          formatStateLabel(provider.currentState.name),
           style: textStyle(
             35,
-            renderColor(provider.currentState),
+            renderColor(provider.currentState.name),
             FontWeight.w700,
           ),
         ),
@@ -165,7 +63,7 @@ class TimerCard extends StatelessWidget {
                   strokeWidth: 10,
                   backgroundColor: Colors.white10,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    renderColor(provider.currentState),
+                    renderColor(provider.currentState.name),
                   ),
                 ),
               ),
