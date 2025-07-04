@@ -28,12 +28,15 @@ List<String> selectableTimes = [
 
 /// Returns background color depending on current state.
 Color renderColor(String currentState) {
-  switch (currentState) {
-    case "FOCUS":
+  final normalized = currentState.toLowerCase();
+
+  switch (normalized) {
+    case "focus":
       return const Color(0xFF1A1A40); // Deep Indigo
-    case "BREAK":
+    case "shortbreak":
+    case "break":
       return const Color(0xFFA8D5BA); // Misty Sage
-    case "LONGBREAK":
+    case "longbreak":
       return const Color(0xFFFFD6A5); // Warm Coral
     default:
       return Colors.grey.shade400;
@@ -43,16 +46,21 @@ Color renderColor(String currentState) {
 
 
 
+
 /// Converts internal state label to user-friendly text.
 String formatStateLabel(String state) {
-  switch (state) {
-    case "FOCUS":
+  final normalized = state.toLowerCase();
+
+  switch (normalized) {
+    case "focus":
       return "Focus";
-    case "BREAK":
+    case "shortbreak":
+    case "break":
       return "Short Break";
-    case "LONGBREAK":
+    case "longbreak":
       return "Long Break";
     default:
       return state;
   }
 }
+

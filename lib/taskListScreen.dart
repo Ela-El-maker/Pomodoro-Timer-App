@@ -22,9 +22,18 @@ class _TaskListScreenState extends State<TaskListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadTasks();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) 
+    async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (authService.user != null) {
+      await _loadTasks();
+    } else {
+      // wait a little and try again
+      Future.delayed(Duration(milliseconds: 300), () async {
+        if (mounted) await _loadTasks();
+      });
+    }
+  });
   }
 
   Future<void> _loadTasks() async {
@@ -128,7 +137,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
           ),
         ],
       ),
-      body: _loading
+      body:user == null && _loading
           ? const Center(child: CircularProgressIndicator())
           : Column(children: [
               buildUserCard(user),
@@ -200,48 +209,52 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   Widget buildUserCard(Map<String, dynamic>? user) {
-    if (user == null) {
-      print("User Not Found: $user");
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: LinearProgressIndicator(), // subtle loading indicator
-      );
-    }
-
-    print("User Found : $user");
-
-    return Card(
-      color: Colors.blueGrey.shade100,
-      margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              radius: 25,
-              child: Icon(Icons.person),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user['name'] ?? 'Unknown User',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    user['email'] ?? '',
-                    style: const TextStyle(color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+  if (user == null) {
+    return const Padding(
+      padding: EdgeInsets.all(16),
+      child: Row(
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(width: 12),
+          Text("Loading user..."),
+        ],
       ),
     );
   }
+
+  return Card(
+    color: Colors.blueGrey.shade100,
+    margin: const EdgeInsets.all(16),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 25,
+            child: Icon(Icons.person),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user['name'] ?? 'Unknown User',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  user['email'] ?? '',
+                  style: const TextStyle(color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 }
