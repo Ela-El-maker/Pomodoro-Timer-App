@@ -16,13 +16,16 @@ final GlobalKey<NavigatorState> navigatorKey =
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 👇 Bypass SSL for development ONLY (not safe for prod)
   HttpOverrides.global = MyHttpOverrides();
 
   print("App started");
 
   final authService = AuthService();
-  await authService.tryAutoLogin();
+  final autoLoggedIn = await authService.tryAutoLogin();
+
+  if (autoLoggedIn) {
+    await authService.fetchUser(); // fetch and wait BEFORE UI
+  }
 
   final settingsService = SettingsService();
   if (authService.isAuthenticated) {
@@ -33,8 +36,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthService>.value(value: authService),
-        ChangeNotifierProvider<DailyStatsService>(create: (_) => DailyStatsService()),
         ChangeNotifierProvider<SettingsService>.value(value: settingsService),
+        ChangeNotifierProvider<DailyStatsService>(create: (_) => DailyStatsService()),
         ChangeNotifierProvider(
           create: (_) => TimerService(
             focusDuration: settingsService.focusDuration,
@@ -60,8 +63,6 @@ class MyHttpOverrides extends HttpOverrides {
   }
 }
 
-
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -80,9 +81,9 @@ class MyApp extends StatelessWidget {
       },
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
-      themeMode: settings.darkMode ? ThemeMode.dark : ThemeMode.light, // ✅ FIXED
+      themeMode:
+          settings.darkMode ? ThemeMode.dark : ThemeMode.light, // ✅ FIXED
       home: auth.isAuthenticated ? const TaskListScreen() : const LoginScreen(),
     );
   }
 }
-

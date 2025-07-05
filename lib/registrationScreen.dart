@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pomodoro/taskListScreen.dart';
+import 'package:provider/provider.dart';
 
 import 'authService.dart';
 import 'loginScreen.dart';
@@ -39,7 +40,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final message = await AuthService().register(
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final success = await auth.register(
         nameController.text.trim(),
         emailController.text.trim(),
         passwordController.text.trim(),
@@ -47,11 +49,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       setState(() => isLoading = false);
 
-      if (message == true) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const TaskListScreen()),
-        );
+     if (success == true) {
+        final auth = Provider.of<AuthService>(context, listen: false);
+        if (auth.user != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const TaskListScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("User data not available yet")),
+          );
+        }
       }
     } catch (e) {
       setState(() {

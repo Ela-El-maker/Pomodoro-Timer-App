@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pomodoro/taskListScreen.dart';
+import 'package:provider/provider.dart';
 import 'authService.dart';
 import 'registrationScreen.dart';
 
@@ -35,18 +36,26 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final message = await AuthService().login(
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final success = await auth.login(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
 
       setState(() => isLoading = false);
 
-      if (message == true) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const TaskListScreen()),
-        );
+      if (success == true) {
+        final auth = Provider.of<AuthService>(context, listen: false);
+        if (auth.user != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const TaskListScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("User data not available yet")),
+          );
+        }
       }
     } catch (e) {
       setState(() {

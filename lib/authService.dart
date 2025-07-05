@@ -35,11 +35,18 @@ class AuthService with ChangeNotifier {
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['token'] != null) {
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data['token'] != null) {
         await _saveToken(data['token']);
         await fetchUser();
-        notifyListeners();
-        return true;
+        debugPrint("✅ Final user (post-fetch): $_user");
+
+        if (_user != null) {
+          notifyListeners();
+          return true;
+        } else {
+          throw Exception("User data was not set correctly.");
+        }
       } else {
         if (response.statusCode == 422 && data['errors'] != null) {
           // Laravel validation errors
@@ -76,9 +83,18 @@ class AuthService with ChangeNotifier {
 
       if (response.statusCode == 200 && data['token'] != null) {
         await _saveToken(data['token']);
+        // await fetchUser();
+
+        debugPrint("✅ Final user (post-fetch): $_user");
+
         await fetchUser();
-        notifyListeners();
-        return true;
+
+        if (_user != null) {
+          notifyListeners();
+          return true;
+        } else {
+          throw Exception("User data was not set correctly.");
+        }
       } else {
         if (response.statusCode == 422 && data['errors'] != null) {
           // Laravel validation errors
@@ -90,6 +106,8 @@ class AuthService with ChangeNotifier {
           });
           throw Exception(fullMessage.trim());
         }
+        debugPrint("📡 Register status: ${response.statusCode}");
+        debugPrint("📡 Register response: ${response.body}");
 
         throw Exception(data['message'] ?? "Registration failed.");
       }
@@ -106,22 +124,23 @@ class AuthService with ChangeNotifier {
   //   notifyListeners();
   // }
 
-  Future<void> tryAutoLogin() async {
+  Future<bool> tryAutoLogin() async {
     final prefs = await SharedPreferences.getInstance();
     if (prefs.containsKey('token')) {
       _token = prefs.getString('token');
       _authenticated = true;
 
-      // Restore cached user
       if (prefs.containsKey('user')) {
-        _user = jsonDecode(prefs.getString('user')!);
+        _user = jsonDecode(
+            prefs.getString('user')!); // 🌟 use cached user instantly
       }
 
-// 🔧 Ensure server sync (optional but preferred)
-      await fetchUser();
+      notifyListeners(); // immediately update UI with cached data
 
-      notifyListeners();
+      await fetchUser(); // then update with fresh one from server
+      return true;
     }
+    return false;
   }
 
   Future<void> _saveToken(String token) async {
@@ -133,27 +152,33 @@ class AuthService with ChangeNotifier {
     notifyListeners();
   }
 
+  bool _fetchingUser = false;
+
   Future<void> fetchUser() async {
-    if (_token == null) return;
+    if (_token == null || _fetchingUser) return;
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/user'),
-      headers: {
-        'Authorization': 'Bearer $_token',
-        'Accept': 'application/json',
-      },
-    );
+    _fetchingUser = true;
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/user'),
+        headers: {
+          'Authorization': 'Bearer $_token',
+          'Accept': 'application/json',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      _user = jsonDecode(response.body);
-      debugPrint("✅ User fetched: $_user");
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user', jsonEncode(_user)); // 💾 cache user
+      if (response.statusCode == 200) {
+        _user = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user', jsonEncode(_user));
+        debugPrint("✅ User fetched in AuthService: $_user");
+      } else {
+        debugPrint("❌ Failed to fetch user: ${response.statusCode}");
+        _user = null;
+      }
+    } finally {
+      _fetchingUser = false;
       notifyListeners();
-    } else {
-      debugPrint(
-          "Failed to fetch user: ${response.statusCode} ${response.body}");
-      _user = null;
     }
   }
 
