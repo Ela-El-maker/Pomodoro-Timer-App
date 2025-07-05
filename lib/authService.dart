@@ -36,11 +36,22 @@ class AuthService with ChangeNotifier {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['token'] != null) {
-        await _saveToken(data['token']); // Save token first
-        await fetchUser(); // Then fetch user
+        await _saveToken(data['token']);
+        await fetchUser();
         notifyListeners();
         return true;
       } else {
+        if (response.statusCode == 422 && data['errors'] != null) {
+          // Laravel validation errors
+          String fullMessage = "";
+          data['errors'].forEach((key, messages) {
+            for (var msg in messages) {
+              fullMessage += "$msg\n";
+            }
+          });
+          throw Exception(fullMessage.trim());
+        }
+
         throw Exception(data['message'] ?? "Registration failed.");
       }
     } catch (e) {
@@ -64,12 +75,23 @@ class AuthService with ChangeNotifier {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['token'] != null) {
-        await _saveToken(data['token']); // Save token first
-        await fetchUser(); // Then fetch user
+        await _saveToken(data['token']);
+        await fetchUser();
         notifyListeners();
         return true;
       } else {
-        throw Exception(data['message'] ?? "Login failed. Please try again.");
+        if (response.statusCode == 422 && data['errors'] != null) {
+          // Laravel validation errors
+          String fullMessage = "";
+          data['errors'].forEach((key, messages) {
+            for (var msg in messages) {
+              fullMessage += "$msg\n";
+            }
+          });
+          throw Exception(fullMessage.trim());
+        }
+
+        throw Exception(data['message'] ?? "Registration failed.");
       }
     } catch (e) {
       throw Exception('Login error: ${e.toString()}');

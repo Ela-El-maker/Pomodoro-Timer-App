@@ -38,19 +38,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
       error = '';
     });
 
-    final message = await AuthService().register(
-      nameController.text.trim(),
-      emailController.text.trim(),
-      passwordController.text.trim(),
-    );
-
-    setState(() => isLoading = false);
-
-    if (message == true) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const TaskListScreen()),
+    try {
+      final message = await AuthService().register(
+        nameController.text.trim(),
+        emailController.text.trim(),
+        passwordController.text.trim(),
       );
+
+      setState(() => isLoading = false);
+
+      if (message == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TaskListScreen()),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        error = e.toString().replaceFirst("Exception: ", "").trim();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -152,6 +167,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           style: const TextStyle(color: Colors.white),
                         ),
                         const SizedBox(height: 20),
+                        if (error.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              error,
+                              style: const TextStyle(
+                                  color: Colors.redAccent, fontSize: 14),
+                            ),
+                          ),
                         ElevatedButton(
                           onPressed: isLoading ||
                                   nameController.text.isEmpty ||

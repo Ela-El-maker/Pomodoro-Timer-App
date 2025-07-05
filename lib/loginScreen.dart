@@ -133,7 +133,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(color: Colors.white),
                 ),
                 const SizedBox(height: 20),
-               
+                if (error.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      error,
+                      style: const TextStyle(
+                          color: Colors.redAccent, fontSize: 14),
+                    ),
+                  ),
                 ElevatedButton(
                   onPressed: isLoading ||
                           emailController.text.isEmpty ||
